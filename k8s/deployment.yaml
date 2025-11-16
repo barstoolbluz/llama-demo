@@ -38,10 +38,7 @@ spec:
             # Can override here if needed:
             # - name: MODEL_PATH
             #   value: "/custom/path"
-            - name: SERVER_HOST
-              value: "0.0.0.0"
-            - name: SERVER_PORT
-              value: "8000"
+            # Note: Server host/port are hardcoded in llama-server (0.0.0.0:8000)
           livenessProbe:
             httpGet:
               path: /health
