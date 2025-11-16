@@ -16,9 +16,22 @@
         "pkg-path": "python311"
       }
     },
+    "vars": {},
     "hook": {},
     "profile": {},
-    "options": {}
+    "options": {},
+    "build": {
+      "llama-model": {
+        "command": "#!/usr/bin/env bash\nset -euo pipefail\n\necho \"Packaging LLaMA 2 7B model (using symlinks)...\"\n\n# Create output directory structure\nmkdir -p \"$out/share/models\"\n\n# Get absolute path to model files\nMODEL_SRC=\"$(cd models/llama-2-7b-hf && pwd)\"\n\n# Create symlink to model directory\nln -s \"$MODEL_SRC\" \"$out/share/models/llama-2-7b-hf\"\n\n# Verify\nif [ -f \"$out/share/models/llama-2-7b-hf/config.json\" ]; then\n  echo \"✓ Model packaged successfully (symlinked)\"\n  echo \"  Target: $MODEL_SRC\"\n  echo \"  Link: $out/share/models/llama-2-7b-hf\"\nelse\n  echo \"✗ Model packaging failed\"\n  exit 1\nfi\n",
+        "version": "2.0.0",
+        "description": "LLaMA 2 7B HuggingFace model"
+      },
+      "llama-server": {
+        "command": "#!/usr/bin/env bash\nset -euo pipefail\n\necho \"Building LLaMA 2 Inference Server...\"\n\n# Create virtualenv in $out\npython -m venv \"$out\"\nsource \"$out/bin/activate\"\n\n# Install dependencies\necho \"Installing dependencies...\"\npip install --upgrade pip setuptools wheel\npip install fastapi uvicorn transformers torch --extra-index-url https://download.pytorch.org/whl/cpu\n\n# Copy server script\necho \"Installing server application...\"\nmkdir -p \"$out/lib/llama-server\"\ncp server/server.py \"$out/lib/llama-server/\"\n\n# Create launcher script\ncat > \"$out/bin/llama-server\" <<'EOF'\n#!/usr/bin/env bash\nset -euo pipefail\n\n# Activate virtualenv\nSCRIPT_DIR=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\"\nsource \"$SCRIPT_DIR/activate\"\n\n# Set default MODEL_PATH if not provided\nif [ -z \"${MODEL_PATH:-}\" ]; then\n    echo \"ERROR: MODEL_PATH environment variable not set\"\n    echo \"Usage: MODEL_PATH=/path/to/model llama-server [OPTIONS]\"\n    exit 1\nfi\n\n# Run server\ncd \"$(dirname \"$SCRIPT_DIR\")/lib/llama-server\"\nexec uvicorn server:app --host 0.0.0.0 --port 8000 \"$@\"\nEOF\n\nchmod +x \"$out/bin/llama-server\"\n\necho \"\"\necho \"✓ LLaMA Server built successfully!\"\necho \"\"\necho \"Usage:\"\necho \"  MODEL_PATH=/path/to/model llama-server\"\necho \"\"\n",
+        "version": "1.0.0",
+        "description": "LLaMA 2 7B Inference Server (FastAPI)"
+      }
+    }
   },
   "packages": [
     {

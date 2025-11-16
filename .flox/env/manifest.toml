@@ -28,7 +28,7 @@ git.pkg-path = "git"
 ##      as well as [hook], [profile] scripts and [services] below.
 ## -------------------------------------------------------------------
 [vars]
-# INTRO_MESSAGE = "It's gettin' Flox in here"
+# HF_TOKEN was used for initial model download - no longer needed
 
 
 ## Activation Hook ---------------------------------------------------
@@ -84,14 +84,89 @@ git.pkg-path = "git"
 ##  $ flox publish
 ## ------------------------------------------------------------------
 [build]
-# [build.myproject]
-# description = "The coolest project ever"
-# version = "0.0.1"
-# command = """
-#   mkdir -p $out/bin
-#   cargo build --release
-#   cp target/release/myproject $out/bin/myproject
-# """
+
+[build.llama-model]
+description = "LLaMA 2 7B HuggingFace model"
+version = "2.0.0"
+command = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Packaging LLaMA 2 7B model (using symlinks)..."
+
+# Create output directory structure
+mkdir -p "$out/share/models"
+
+# Get absolute path to model files
+MODEL_SRC="$(cd models/llama-2-7b-hf && pwd)"
+
+# Create symlink to model directory
+ln -s "$MODEL_SRC" "$out/share/models/llama-2-7b-hf"
+
+# Verify
+if [ -f "$out/share/models/llama-2-7b-hf/config.json" ]; then
+  echo "✓ Model packaged successfully (symlinked)"
+  echo "  Target: $MODEL_SRC"
+  echo "  Link: $out/share/models/llama-2-7b-hf"
+else
+  echo "✗ Model packaging failed"
+  exit 1
+fi
+"""
+
+[build.llama-server]
+description = "LLaMA 2 7B Inference Server (FastAPI)"
+version = "1.0.0"
+command = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Building LLaMA 2 Inference Server..."
+
+# Create virtualenv in $out
+python -m venv "$out"
+source "$out/bin/activate"
+
+# Install dependencies
+echo "Installing dependencies..."
+pip install --upgrade pip setuptools wheel
+pip install fastapi uvicorn transformers torch --extra-index-url https://download.pytorch.org/whl/cpu
+
+# Copy server script
+echo "Installing server application..."
+mkdir -p "$out/lib/llama-server"
+cp server/server.py "$out/lib/llama-server/"
+
+# Create launcher script
+cat > "$out/bin/llama-server" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Activate virtualenv
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/activate"
+
+# Set default MODEL_PATH if not provided
+if [ -z "${MODEL_PATH:-}" ]; then
+    echo "ERROR: MODEL_PATH environment variable not set"
+    echo "Usage: MODEL_PATH=/path/to/model llama-server [OPTIONS]"
+    exit 1
+fi
+
+# Run server
+cd "$(dirname "$SCRIPT_DIR")/lib/llama-server"
+exec uvicorn server:app --host 0.0.0.0 --port 8000 "$@"
+EOF
+
+chmod +x "$out/bin/llama-server"
+
+echo ""
+echo "✓ LLaMA Server built successfully!"
+echo ""
+echo "Usage:"
+echo "  MODEL_PATH=/path/to/model llama-server"
+echo ""
+"""
 
 
 ## Other Environment Options -----------------------------------------
