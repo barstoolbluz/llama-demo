@@ -65,8 +65,8 @@ let
 
     outputHashMode = "recursive";
     outputHashAlgo = "sha256";
-    # Platform-specific hashes (model files are the same across platforms)
-    outputHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="; # Placeholder - will be updated after first build
+    # Hash computed from actual model download
+    outputHash = "sha256-XMIzOebWonFsDj32iHGH0BWTBN0rCFFQW2rj08yRXpY=";
   };
 
 in
