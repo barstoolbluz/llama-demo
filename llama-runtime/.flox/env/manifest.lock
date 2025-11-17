@@ -1,0 +1,23 @@
+{
+  "lockfile-version": 1,
+  "manifest": {
+    "version": 1,
+    "vars": {
+      "MODEL_PATH": "${FLOX_ENV}/share/models/llama-2-7b-hf"
+    },
+    "hook": {
+      "on-activate": "  # Create log directory\n  mkdir -p \"$FLOX_ENV_CACHE/logs\"\n\n  # Verify model path if packages are installed\n  if [ -n \"${MODEL_PATH:-}\" ] && [ ! -d \"$MODEL_PATH\" ]; then\n    echo \"⚠️  Warning: MODEL_PATH not found: $MODEL_PATH\"\n    echo \"   Set MODEL_PATH to your model location or install llama-model package\"\n  fi\n"
+    },
+    "profile": {},
+    "options": {},
+    "services": {
+      "llama-server": {
+        "command": "  # Ensure MODEL_PATH is set\n  if [ -z \"${MODEL_PATH:-}\" ]; then\n    echo \"ERROR: MODEL_PATH not set\"\n    exit 1\n  fi\n\n  # Log server startup\n  echo \"Starting LLaMA Inference Server...\"\n  echo \"  Model: $MODEL_PATH\"\n  echo \"  Server will bind to: 0.0.0.0:8000\"\n  echo \"\"\n\n  # Run server with logging\n  # Note: llama-server launcher script has host/port hardcoded\n  exec llama-server 2>&1 | tee -a \"$FLOX_ENV_CACHE/logs/llama-server.log\"\n",
+        "vars": {
+          "MODEL_PATH": "${MODEL_PATH}"
+        }
+      }
+    }
+  },
+  "packages": []
+}

@@ -1,0 +1,122 @@
+## Flox Environment Manifest -----------------------------------------
+##
+##   _Everything_ you need to know about the _manifest_ is here:
+##
+##   https://flox.dev/docs/reference/command-reference/manifest.toml/
+##
+## -------------------------------------------------------------------
+# Flox manifest version managed by Flox CLI
+version = 1
+
+
+## Install Packages --------------------------------------------------
+##  $ flox install gum  <- puts a package in [install] section below
+##  $ flox search gum   <- search for a package
+##  $ flox show gum     <- show all versions of a package
+## -------------------------------------------------------------------
+[install]
+# Packages will be added here once published:
+# llama-model.pkg-path = "owner/llama-2-7b-hf-model"
+# llama-server.pkg-path = "owner/llama-server"
+
+
+## Environment Variables ---------------------------------------------
+##  ... available for use in the activated environment
+##      as well as [hook], [profile] scripts and [services] below.
+## -------------------------------------------------------------------
+[vars]
+# Path to LLaMA model files (required for server operation)
+# Override at runtime: MODEL_PATH=/custom/path flox activate
+MODEL_PATH = "${FLOX_ENV}/share/models/llama-2-7b-hf"
+
+# Note: Server host/port are hardcoded in llama-server launcher (0.0.0.0:8000)
+
+
+## Activation Hook ---------------------------------------------------
+##  ... run by _bash_ shell when you run 'flox activate'.
+## -------------------------------------------------------------------
+[hook]
+on-activate = '''
+  # Create log directory
+  mkdir -p "$FLOX_ENV_CACHE/logs"
+
+  # Verify model path if packages are installed
+  if [ -n "${MODEL_PATH:-}" ] && [ ! -d "$MODEL_PATH" ]; then
+    echo "⚠️  Warning: MODEL_PATH not found: $MODEL_PATH"
+    echo "   Set MODEL_PATH to your model location or install llama-model package"
+  fi
+'''
+
+
+## Profile script ----------------------------------------------------
+## ... sourced by _your shell_ when you run 'flox activate'.
+## -------------------------------------------------------------------
+[profile]
+# common = '''
+#   # Helper functions available in the shell
+# '''
+
+
+## Services ---------------------------------------------------------
+##  $ flox services start             <- Starts all services
+##  $ flox services status            <- Status of running services
+##  $ flox activate --start-services  <- Activates & starts all
+## ------------------------------------------------------------------
+[services]
+
+[services.llama-server]
+command = '''
+  # Ensure MODEL_PATH is set
+  if [ -z "${MODEL_PATH:-}" ]; then
+    echo "ERROR: MODEL_PATH not set"
+    exit 1
+  fi
+
+  # Log server startup
+  echo "Starting LLaMA Inference Server..."
+  echo "  Model: $MODEL_PATH"
+  echo "  Server will bind to: 0.0.0.0:8000"
+  echo ""
+
+  # Run server with logging
+  # Note: llama-server launcher script has host/port hardcoded
+  exec llama-server 2>&1 | tee -a "$FLOX_ENV_CACHE/logs/llama-server.log"
+'''
+vars.MODEL_PATH = "${MODEL_PATH}"
+
+
+## Include ----------------------------------------------------------
+## ... environments to create a composed environment
+## ------------------------------------------------------------------
+[include]
+# environments = [
+#     { dir = "../common" }
+# ]
+
+
+## Build and publish your own packages ------------------------------
+##  $ flox build
+##  $ flox publish
+## ------------------------------------------------------------------
+[build]
+# [build.myproject]
+# description = "The coolest project ever"
+# version = "0.0.1"
+# command = """
+#   mkdir -p $out/bin
+#   cargo build --release
+#   cp target/release/myproject $out/bin/myproject
+# """
+
+
+## Other Environment Options -----------------------------------------
+[options]
+# Systems that environment is compatible with
+# systems = [
+#   "aarch64-darwin",
+#   "aarch64-linux",
+#   "x86_64-darwin",
+#   "x86_64-linux",
+# ]
+# Uncomment to disable CUDA detection.
+# cuda-detection = false
