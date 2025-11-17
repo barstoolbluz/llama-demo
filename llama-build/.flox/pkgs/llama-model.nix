@@ -112,9 +112,12 @@ stdenv.mkDerivation {
 
       To build, set HF_TOKEN environment variable:
         HF_TOKEN=your_token flox build llama-model
+
+      License: LLaMA 2 Community License Agreement
+      https://ai.meta.com/llama/license/
     '';
     homepage = "https://huggingface.co/${modelRepo}";
-    license = licenses.llama2;
+    license = licenses.unfree;
     platforms = platforms.unix;
   };
 }
