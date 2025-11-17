@@ -3,7 +3,6 @@
 , python311
 , curl
 , cacert
-, huggingface-hub
 }:
 
 let
