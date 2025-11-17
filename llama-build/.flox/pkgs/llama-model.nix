@@ -47,6 +47,11 @@ let
       export HF_TOKEN="${hfToken}"
       export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
 
+      # Set HuggingFace cache to a writable location in the build
+      export HF_HOME=$TMPDIR/hf_home
+      export HF_HUB_CACHE=$TMPDIR/hf_cache
+      mkdir -p $HF_HOME $HF_HUB_CACHE
+
       echo "========================================="
       echo "Downloading LLaMA 2 7B Model"
       echo "Repository: ${modelRepo}"
